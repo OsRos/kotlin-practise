@@ -1,7 +1,6 @@
 package sample.ds.heaps
 
 import sample.IProgram
-import sample.IProgramFactory
 import kotlin.math.floor
 
 /*
@@ -11,19 +10,14 @@ import kotlin.math.floor
 * 3.)Remove elements from heap i.e keep the  heap in order & shape
 * */
 
-/*
-* 1
-* 2 1
-* 3 1 2
-* 4 3 2 1 -> 4 3 2 1 5 -> 4 5 2 1 3 -> 5 4 2 1 3
-* 3 4 2 1 -> 4 3 2 1
-* */
-class HeapProgramFactory : IProgramFactory {
-    override fun getInstance(version: Int): IProgram {
-        return when (version) {
-            1 -> MaxHeapProgram()
-            else -> throw IllegalArgumentException("Invalid version")
-        }
+//            8
+//         7      5
+//       6   2   1  4
+//     0  3
+fun heapProgram(version: Int): IProgram {
+    return when (version) {
+        1 -> MaxHeapProgram()
+        else -> throw IllegalArgumentException("Invalid version")
     }
 }
 
@@ -94,7 +88,7 @@ class MaxHeap(private val maxSize: Int = 100) : Heap {
         val max = heapArray[0]
         heapArray[0] = heapArray[size - 1]
         size--
-        heapArray=heapArray.sliceArray(0..size-1)
+        heapArray = heapArray.sliceArray(0 until size)
         shiftDown(0)
         return max
     }
@@ -107,30 +101,29 @@ class MaxHeap(private val maxSize: Int = 100) : Heap {
         val maxChildIndex = getMaxChildIndex(index) ?: return
         //Get the index of the max child
         if (heapArray[index] < heapArray[maxChildIndex]) {
-            swap(index,maxChildIndex)
+            swap(index, maxChildIndex)
             shiftDown(maxChildIndex)
         }
     }
 
-    private fun getMaxChildIndex(index: Int): Int? {
-        val child1= getElement(firstChildIndex(index))
-        val child2=getElement(firstChildIndex(index) +1)
-        if (child1==null)return null //if no children
-        if (child2==null && heapArray[index]<heapArray[firstChildIndex(index)]) return firstChildIndex(index) //if only 1 child & it is greater
-        if ((child1 > child2!!) && heapArray[index]<heapArray[firstChildIndex(index)]) return firstChildIndex(index) //if 1st  child is greater
-        if ((child2 > child1) && heapArray[index]<heapArray[firstChildIndex(index) +1]) return firstChildIndex(index) +1 //if 2nd child is greater
+    private fun getMaxChildIndex(parentIndex: Int): Int? {
+        val child1 = heapArray.getOrNull(firstChildIndex(parentIndex))
+        val child2 = heapArray.getOrNull(secondChildIndex(parentIndex))
+        if (child1 == null) return null //if no children
+        if (child2 == null && isFirstChildGreater(parentIndex)) return firstChildIndex(parentIndex) //if only 1 child & it is greater
+        if ((child1 >= child2!!) && isFirstChildGreater(parentIndex)) return firstChildIndex(parentIndex) //if 1st  child is greater
+        if ((child2 > child1) && isSecondChildGreater(parentIndex)) return secondChildIndex(parentIndex) //if 2nd child is greater
         return null
     }
 
-    private fun firstChildIndex(index: Int) = 2 * index+1
+    private fun isSecondChildGreater(parentIndex: Int) =
+        heapArray[parentIndex] < heapArray[secondChildIndex(parentIndex)]
 
-    private fun getElement(index: Int): Int? {
-        return if (index < size) {
-            heapArray[index]
-        } else {
-            null
-        }
-    }
+    private fun secondChildIndex(parentIndex: Int) = firstChildIndex(parentIndex) + 1
+
+    private fun isFirstChildGreater(parentIndex: Int) = heapArray[parentIndex] < heapArray[firstChildIndex(parentIndex)]
+
+    private fun firstChildIndex(parentIndex: Int) = 2 * parentIndex + 1
 
     override fun toString(): String {
         return heapArray.contentToString()

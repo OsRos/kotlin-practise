@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="App" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="sample.Main" />
+    <module name="Kotlin-sandbox-new.main" />
+    <option name="PROGRAM_PARAMETERS" value="Heaps 1" />
+    <option name="REDIRECT_INPUT" value="true" />
+    <option name="INPUT_FILE" value="$PROJECT_DIR$/inputArgs.txt" />
+    <shortenClasspath name="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

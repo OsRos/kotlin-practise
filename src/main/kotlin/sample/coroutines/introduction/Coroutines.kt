@@ -2,16 +2,13 @@ package sample.sample.coroutines.introduction
 
 import kotlinx.coroutines.*
 import sample.IProgram
-import sample.IProgramFactory
 import java.util.*
 
-class CoroutineIntroductionProgramFactory : IProgramFactory {
-    override fun getInstance(version: Int): IProgram {
-        return when (version) {
-            1 -> CoroutineLauncher()
-            2 -> CoroutineAsyncer()
-            else -> throw IllegalArgumentException("Invalid version")
-        }
+fun coroutineIntroductionProgram(version: Int): IProgram {
+    return when (version) {
+        1 -> CoroutineLauncher()
+        2 -> CoroutineAsyncer()
+        else -> throw IllegalArgumentException("Invalid version")
     }
 }
 

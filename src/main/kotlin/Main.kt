@@ -1,14 +1,29 @@
 package sample;
 
-import sample.ds.heaps.HeapProgramFactory
-import sample.sample.coroutines.introduction.CoroutineIntroductionProgramFactory
+import sample.ds.heaps.heapProgram
+import sample.sample.coroutines.introduction.coroutineIntroductionProgram
 
-fun main(args: Array<String>) {
-    //  val program = CoroutineIntroductionProgramFactory().getInstance(2)
-    val program = HeapProgramFactory().getInstance(1)
-    program.execute()
+enum class ProgramType(vararg val aliases: String) {
+    Coroutines_Introduction("CI"),
+    Heaps("HP")
 }
-//            8
-//         7      5
-//       6   2   1  4
-//     0  3
+
+object Main {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        val programType = args.getOrNull(0)
+        val programVersion = args.getOrElse(1) { "1" }.toInt()
+        val program = getProgram(resolveProgramType(programType), programVersion)
+        program.execute()
+    }
+
+    private fun getProgram(programType: ProgramType, programVersion: Int) = when (programType) {
+        ProgramType.Coroutines_Introduction -> coroutineIntroductionProgram(programVersion)
+        ProgramType.Heaps -> heapProgram(programVersion)
+        else -> throw IllegalArgumentException("Invalid Program Type")
+    }
+
+    private fun resolveProgramType(programType: String?): ProgramType =
+        ProgramType.values().filter { it.name == programType || it.aliases.contains(programType) }.firstOrNull()
+            ?: throw IllegalArgumentException("Invalid Program Type")
+}
