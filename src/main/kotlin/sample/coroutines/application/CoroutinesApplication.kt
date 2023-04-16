@@ -1,9 +1,13 @@
 package sample.sample.coroutines.application
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.produce
 import sample.IProgram
 import sample.sample.coroutines.introduction.clientId
 import sample.sample.coroutines.introduction.coroutineName
+
 
 fun coroutineApplicationProgram(version: Int, vararg args: String): IProgram = when (version) {
     1 -> CoroutineScoper(
@@ -37,8 +41,49 @@ class CoroutineChanneller : IProgram {
     * 2.1)Producing coroutine will generate fibonacci numbers
     * 2.2)Queueing coroutine will consume the numbers from the producer and push it into a queue
     * */
+
+    private val maxSequence = 10
+    private var sequence = 2
+    private val queue = mutableListOf<Int>()
     override fun execute() {
-        TODO("Not yet implemented")
+        runBlocking {
+            val fibonacciSequence = produceFibonacciSequence(0, 1)
+            printFibonacciSequence(fibonacciSequence)
+        }
+    }
+
+    fun CoroutineScope.produceFibonacciSequence(first: Int, second: Int): ReceiveChannel<Int> = produce {
+        send(first)
+        send(second)
+        var first = first
+        var second = second
+        sequence++
+        while (sequence < maxSequence) {
+            val next = first + second
+            send(next)
+            sequence++
+            first = second
+            second = next
+        }
+        send(first + second)
+    }
+
+    suspend fun CoroutineScope.printFibonacciSequence(numbers: ReceiveChannel<Int>) = numbers.consumeEach {
+        print("$it,")
+    }
+
+    suspend fun CoroutineScope.queueFibonacciSequence(numbers: ReceiveChannel<Int>) = numbers.consumeEach {
+        queue.add(it)
+    }
+
+
+    fun generateFibonacciSequenceRecursively(first: Int, second: Int): Int {
+        if (sequence == maxSequence) {
+            return second
+        }
+        print("$second,")
+        sequence++
+        return generateFibonacciSequenceRecursively(second, first + second)
     }
 
 }
