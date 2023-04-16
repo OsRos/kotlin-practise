@@ -8,6 +8,7 @@ fun coroutineIntroductionProgram(version: Int): IProgram {
     return when (version) {
         1 -> CoroutineLauncher()
         2 -> CoroutineAsyncer()
+        3 -> CoroutineAsyncerWithExceptions()
         else -> throw IllegalArgumentException("Invalid version")
     }
 }
@@ -65,6 +66,57 @@ class CoroutineAsyncer : IProgram {
         }
     }
 }
+
+class CoroutineAsyncerWithExceptions : IProgram {
+
+    /*
+    * Program to demonstrate the use of coroutine scope
+    * 1.)Demonstrate how coroutine scope can clean up/manage the co-routines
+    * 2.)Throw exceptions from within coroutines & cancel using scope
+    * 3.)Also show an example without use of scope
+    * */
+    override fun execute() {
+        runBlocking {
+            try {
+                repeat(5) {
+                    try {
+                        coroutineAsyncer(it)
+                    } catch (e: Exception) {
+                        println("Exception caught in execute repeat ${e.stackTrace}")
+                        throw e
+                    }
+                }
+            } catch (e: Exception) {
+                println("Exception caught in execute ${e.stackTrace}")
+            }
+        }
+    }
+
+    private suspend fun coroutineAsyncer(it: Int) = GlobalScope.async(coroutineName("$it #Launched#")) {
+        try {
+            failingCommand(clientId())
+        } catch (e: Exception) {
+            println("Exception caught in coroutineLauncher $it")
+            throw e
+        }
+    }.await()
+
+    /*
+    Command which fails randomly
+    * */
+    private suspend fun failingCommand(clientId: String) {
+        val random = Random()
+        val randomInt = random.nextInt(10)
+        delay(randomInt.toLong() * 1000)
+        if (randomInt % 2 == 0) {
+            throw RuntimeException("Random Exception for $clientId after $randomInt seconds")
+        } else {
+            println("Command executed for $clientId after $randomInt seconds")
+        }
+    }
+
+}
+
 
 internal fun CoroutineScope.clientId() = "${coroutineContext[CoroutineName]?.name} - ${UUID.randomUUID().toString()}"
 
