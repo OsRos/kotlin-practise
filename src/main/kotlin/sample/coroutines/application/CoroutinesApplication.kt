@@ -1,12 +1,14 @@
 package sample.sample.coroutines.application
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.channels.produce
 import sample.IProgram
 import sample.sample.coroutines.introduction.clientId
 import sample.sample.coroutines.introduction.coroutineName
+import java.util.*
 
 
 fun coroutineApplicationProgram(version: Int, vararg args: String): IProgram = when (version) {
@@ -48,29 +50,43 @@ class CoroutineChanneller : IProgram {
     override fun execute() {
         runBlocking {
             val fibonacciSequence = produceFibonacciSequence(0, 1)
-            printFibonacciSequence(fibonacciSequence)
+            printFibonacciSequenceParallely(fibonacciSequence)
         }
     }
 
     fun CoroutineScope.produceFibonacciSequence(first: Int, second: Int): ReceiveChannel<Int> = produce {
-        send(first)
-        send(second)
+        timedSend(first)
+        timedSend(second)
         var first = first
         var second = second
         sequence++
         while (sequence < maxSequence) {
             val next = first + second
-            send(next)
+            timedSend(next)
             sequence++
             first = second
             second = next
         }
-        send(first + second)
+        timedSend(first + second)
+    }
+
+    suspend fun ProducerScope<Int>.timedSend(value: Int) {
+//        println("Sending $value at ${System.nanoTime()}")
+        send(value)
     }
 
     suspend fun CoroutineScope.printFibonacciSequence(numbers: ReceiveChannel<Int>) = numbers.consumeEach {
         print("$it,")
     }
+
+    //TODO :  The fibonacci sequence is not printed in the same order, if you use multiple consumer threads and remove  the delay. Why?
+    //TODO :  How to create a consumer which prints elements in the same order in which elements are sent.
+    suspend fun CoroutineScope.printFibonacciSequenceParallely(numbers: ReceiveChannel<Int>) =
+        launch {
+            numbers.consumeEach {
+                print("$it,")
+            }
+        }
 
     suspend fun CoroutineScope.queueFibonacciSequence(numbers: ReceiveChannel<Int>) = numbers.consumeEach {
         queue.add(it)
