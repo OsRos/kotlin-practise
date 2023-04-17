@@ -8,7 +8,7 @@ import kotlinx.coroutines.channels.produce
 import sample.IProgram
 import sample.sample.coroutines.introduction.clientId
 import sample.sample.coroutines.introduction.coroutineName
-import java.util.*
+import kotlin.system.measureTimeMillis
 
 
 fun coroutineApplicationProgram(version: Int, vararg args: String): IProgram = when (version) {
@@ -18,20 +18,71 @@ fun coroutineApplicationProgram(version: Int, vararg args: String): IProgram = w
     )
 
     2 -> CoroutineChanneller()
-    3 -> CoroutinePooler()
+    3 -> CoroutinePooler(args.getOrElse(0) { "2" }.toInt() )
     else -> throw IllegalArgumentException("Invalid version")
 }
 
-class CoroutinePooler : IProgram {
+fun CoroutineScope.produceFibonacciSequence(first: Int, second: Int, maxSequence: Int = 10): ReceiveChannel<Int> =
+    produce {
+        send(first)
+        send(second)
+        var first = first
+        var second = second
+        var sequence = 3
+        while (sequence < maxSequence) {
+            val next = first + second
+            send(next)
+            sequence++
+            first = second
+            second = next
+        }
+        send(first + second)
+    }
+
+class CoroutinePooler(val workers:Int) : IProgram  {
     /*
     * 1.)Demonstrate the use of coroutine pool
     * 2.)Demonstrate the use of send & receive channels
     * 3.)Program will try to empty the queue using 5 co-routines
     * 4.)Each coroutine will add a delay to simulate long running task
+    * 5.)Will also pool  the results & return the final result
     * */
     override fun execute() {
-        TODO("Not yet implemented")
+        println("Running program with workers=$workers")
+        runBlocking {
+            val fibonacciSequence = produceFibonacciSequence(0, 1)
+            val partialSums = delayedWork(fibonacciSequence)
+            println(totalSum(partialSums))
+        }
     }
+
+    suspend fun CoroutineScope.delayedWork(numbers: ReceiveChannel<Int>) = produce<Int> {
+        repeat(workers) {
+            launch {
+                println(
+                    "Time taken :${
+                        measureTimeMillis {
+                            var sum = 0
+                            numbers.consumeEach  {
+                                delay(1 * 1000L)
+                                sum += it
+                            }
+                            send(sum)
+                        }
+                    }"
+                )
+            }
+        }
+    }
+
+    suspend fun CoroutineScope.totalSum(numbers: ReceiveChannel<Int>): Int {
+        var sum = 0
+        numbers.consumeEach {
+            sum += it
+        }
+        return sum
+    }
+
 
 }
 
@@ -44,9 +95,6 @@ class CoroutineChanneller : IProgram {
     * 2.2)Queueing coroutine will consume the numbers from the producer and push it into a queue
     * */
 
-    private val maxSequence = 10
-    private var sequence = 2
-    private val queue = mutableListOf<Int>()
     override fun execute() {
         runBlocking {
             val fibonacciSequence = produceFibonacciSequence(0, 1)
@@ -54,21 +102,6 @@ class CoroutineChanneller : IProgram {
         }
     }
 
-    fun CoroutineScope.produceFibonacciSequence(first: Int, second: Int): ReceiveChannel<Int> = produce {
-        timedSend(first)
-        timedSend(second)
-        var first = first
-        var second = second
-        sequence++
-        while (sequence < maxSequence) {
-            val next = first + second
-            timedSend(next)
-            sequence++
-            first = second
-            second = next
-        }
-        timedSend(first + second)
-    }
 
     suspend fun ProducerScope<Int>.timedSend(value: Int) {
 //        println("Sending $value at ${System.nanoTime()}")
@@ -88,19 +121,16 @@ class CoroutineChanneller : IProgram {
             }
         }
 
-    suspend fun CoroutineScope.queueFibonacciSequence(numbers: ReceiveChannel<Int>) = numbers.consumeEach {
-        queue.add(it)
-    }
-
-
-    fun generateFibonacciSequenceRecursively(first: Int, second: Int): Int {
-        if (sequence == maxSequence) {
-            return second
+    /*
+        fun generateFibonacciSequenceRecursively(first: Int, second: Int): Int {
+            if (sequence == maxSequence) {
+                return second
+            }
+            print("$second,")
+            sequence++
+            return generateFibonacciSequenceRecursively(second, first + second)
         }
-        print("$second,")
-        sequence++
-        return generateFibonacciSequenceRecursively(second, first + second)
-    }
+    */
 
 }
 

@@ -106,6 +106,7 @@ class MaxHeap(private val maxSize: Int = 100) : Heap {
         }
     }
 
+    //TODO Optimize using binary operators i.e binary left shift
     private fun getMaxChildIndex(parentIndex: Int): Int? {
         val child1 = heapArray.getOrNull(firstChildIndex(parentIndex))
         val child2 = heapArray.getOrNull(secondChildIndex(parentIndex))
